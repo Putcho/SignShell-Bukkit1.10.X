@@ -6,8 +6,8 @@ import java.util.List;
 public class SignShell {
 	public static void main(String[] args){
 		String[] src = {
-				"int i = 123;",
-				"i += 50;"
+				"Test i = new Test();",
+				"i.hoge();"
 				};
 		SignShell ss = new SignShell(src);
 		ss.readAll();
@@ -15,13 +15,20 @@ public class SignShell {
 			System.out.println(line);
 		}
 		ss.output();
+		//Result
+		/**
+		 * Test i = new Test();
+		 * i.hoge();
+		 * ("Test", NAME)("i", NAME)("=", SYMBOL)("new", RESERVED)("Test", NAME)("(", BRACKET)(")", BRACKET)(";", SEMICOLON)
+		 * ("i", NAME)(".", PERIOD)("hoge", NAME)("(", BRACKET)(")", BRACKET)(";", SEMICOLON)
+		 */
 	}
 
 	static final String[] reservedWords = {
 			"abstract",
 			"boolean", "break", "byte",
 			"case", "catch", "char", "class", "continue",
-			"default", "do",
+			"default", "do", "double",
 			"else", "extends",
 			"false", "final", "float", "for",
 			"implements", "import", "int", "interface",
@@ -141,15 +148,16 @@ public class SignShell {
 			if((cha = getChartype()) < chars.length){
 				if(word.length() > 1){
 					this.add(word.substring(0, word.length() - 1));
+					word = String.valueOf(read);
 				}
 				if(cha < 6){
-					this.add(String.valueOf(read), Type.BRACKET);
+					this.add(word, Type.BRACKET);
 				}else if(cha < 7){
-					this.add(String.valueOf(read), Type.COMMA);
+					this.add(word, Type.COMMA);
 				}else if(cha < 8){
-					this.add(String.valueOf(read), Type.COLON);
+					this.add(word, Type.COLON);
 				}else if(cha < 9){
-					this.add(String.valueOf(read), Type.SEMICOLON);
+					this.add(word, Type.SEMICOLON);
 				}
 			}else if(Character.isWhitespace(read)){
 				if(word.length() > 1){
@@ -187,7 +195,9 @@ public class SignShell {
 	void addClassify(String src){
 		String[] space = src.split("\\s+");
 		for(String word: space){
-			if(word.matches("\\d+")){
+			if(word.equals(".")){
+				add(word, Type.PERIOD);
+			}else if(word.matches("\\d+")){
 				add(word, Type.INTEGER);
 			}else if(word.matches("\\d+\\.\\d+")
 					|| word.matches("\\.\\d+")
@@ -196,13 +206,21 @@ public class SignShell {
 			}else{
 				String[] period = word.split("\\.");
 				if(period.length == 1){
-					add(word, getType(word));
+					if(word.matches(".+\\.")){
+						String w = word.substring(0, word.length() - 1);
+						add(w, getType(w));
+						add(".", Type.PERIOD);
+					}else{
+						add(word, getType(word));
+					}
 				}else{
 					for(int i = 0; i < period.length; i++){
 						if(i != 0){
 							add(".", Type.PERIOD);
 						}
-						add(period[i], getType(period[i]));
+						if(!period[i].isEmpty()){
+							add(period[i], getType(period[i]));
+						}
 					}
 				}
 			}
