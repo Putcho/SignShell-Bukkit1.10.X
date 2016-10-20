@@ -5,7 +5,16 @@ import java.util.List;
 
 public class SignShell {
 	public static void main(String[] args){
-
+		String[] src = {
+				"int i = 123;",
+				"i += 50;"
+				};
+		SignShell ss = new SignShell(src);
+		ss.readAll();
+		for(String line: src){
+			System.out.println(line);
+		}
+		ss.output();
 	}
 
 	static final String[] reservedWords = {
@@ -35,7 +44,7 @@ public class SignShell {
 			"{", "}",
 			"[", "}",
 			"(", ")",
-			",", "."
+			",", ":", ";"
 	};
 
 	private char ln;
@@ -63,12 +72,19 @@ public class SignShell {
 			for(char c: s.toCharArray()){
 				this.src[cnt] = c;
 				cnt++;
-				this.src[cnt] = ln;
-				cnt++;
 			}
+			this.src[cnt] = ln;
+			cnt++;
 		}
 		this.cnt = 0;
 		this.word = "";
+	}
+
+	void output(){
+		for(Hoge hoge: words){
+			System.out.print(hoge);
+			if(hoge.type == Type.SEMICOLON)System.out.println();
+		}
 	}
 
 	boolean read(){
@@ -98,11 +114,17 @@ public class SignShell {
 						this.resetWord();
 						continue roop;
 					}
+				}else{
+					break roop;
 				}
 			}
 
 			int cha;
 			if(isSymbol()){
+				if(word.length() > 1){
+					add(word.substring(0, word.length() - 1));
+					word = String.valueOf(read);
+				}
 				if(read()){
 					for(String symbol: symbols){
 						if(word.equals(symbol)){
@@ -125,7 +147,9 @@ public class SignShell {
 				}else if(cha < 7){
 					this.add(String.valueOf(read), Type.COMMA);
 				}else if(cha < 8){
-					this.add(String.valueOf(read), Type.PERIOD);
+					this.add(String.valueOf(read), Type.COLON);
+				}else if(cha < 9){
+					this.add(String.valueOf(read), Type.SEMICOLON);
 				}
 			}else if(Character.isWhitespace(read)){
 				if(word.length() > 1){
@@ -135,10 +159,13 @@ public class SignShell {
 				}
 			}
 		}
+		if(word.length() > 0){
+			add(word);
+		}
 	}
 
 	void add(String word){
-		add(word, getType(word));
+		addClassify(word);
 	}
 
 	void add(String word, Type type){
@@ -151,7 +178,35 @@ public class SignShell {
 	}
 
 	Type getType(String word){
+		for(String reserved: reservedWords){
+			if(word.equals(reserved))return Type.RESERVED;
+		}
 		return Type.NAME;
+	}
+
+	void addClassify(String src){
+		String[] space = src.split("\\s+");
+		for(String word: space){
+			if(word.matches("\\d+")){
+				add(word, Type.INTEGER);
+			}else if(word.matches("\\d+\\.\\d+")
+					|| word.matches("\\.\\d+")
+					|| word.matches("\\d+\\.")){
+				add(word, Type.DOUBLE);
+			}else{
+				String[] period = word.split("\\.");
+				if(period.length == 1){
+					add(word, getType(word));
+				}else{
+					for(int i = 0; i < period.length; i++){
+						if(i != 0){
+							add(".", Type.PERIOD);
+						}
+						add(period[i], getType(period[i]));
+					}
+				}
+			}
+		}
 	}
 
 	boolean isSymbol(){
@@ -178,6 +233,10 @@ class Hoge{
 		this.hoge = hoge;
 		this.type = type;
 	}
+	@Override
+	public String toString(){
+		return String.format("(\"%s\", %s)", hoge, type);
+	}
 }
 
 enum Type{
@@ -186,5 +245,9 @@ enum Type{
 	BRACKET,
 	COMMA,
 	PERIOD,
+	COLON,
+	SEMICOLON,
 	NAME,
+	INTEGER,
+	DOUBLE
 }
