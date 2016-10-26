@@ -6,8 +6,9 @@ import java.util.List;
 public class SignShell {
 	public static void main(String[] args){
 		String[] src = {
-				"Test i = new Test();",
-				"i.hoge();"
+				"int i = 10 * ((8 + 4) | 5) + 3 * ((18 / (5 + 4)) + 3);",
+//				"i += 5;",
+//				"message(i);"
 				};
 		SignShell ss = new SignShell(src);
 		ss.readAll();
@@ -15,12 +16,15 @@ public class SignShell {
 			System.out.println(line);
 		}
 		ss.output();
+		CodeAnalysis ca = new CodeAnalysis(ss.getCodes());
+		ca.readAll();
+		System.out.println(10 * ((8 + 4) | 5) + 3 * ((18 / (5 + 4)) + 3));
 		//Result
 		/**
-		 * Test i = new Test();
-		 * i.hoge();
-		 * ("Test", NAME)("i", NAME)("=", SYMBOL)("new", RESERVED)("Test", NAME)("(", BRACKET)(")", BRACKET)(";", SEMICOLON)
-		 * ("i", NAME)(".", PERIOD)("hoge", NAME)("(", BRACKET)(")", BRACKET)(";", SEMICOLON)
+		 * int i = 10 * ((8 + 4) | 5) + 3 * ((18 / (5 + 4)) + 3);
+		 * ("int", RESERVED)("i", NAME)("=", SYMBOL)("10", INTEGER)("*", SYMBOL)("(", BRACKET)("(", BRACKET)("8", INTEGER)("+", SYMBOL)("4", INTEGER)(")", BRACKET)("|", SYMBOL)("5", INTEGER)(")", BRACKET)("+", SYMBOL)("3", INTEGER)("*", SYMBOL)("(", BRACKET)("(", BRACKET)("18", INTEGER)("/", SYMBOL)("(", BRACKET)("5", INTEGER)("+", SYMBOL)("4", INTEGER)(")", BRACKET)(")", BRACKET)("+", SYMBOL)("3", INTEGER)(")", BRACKET)(";", SEMICOLON)
+		 * 145
+		 * 145
 		 */
 	}
 
@@ -41,9 +45,12 @@ public class SignShell {
 			"while",
 	};
 
+	static final String[] singleSymbols = {
+			"+", "-", "*", "/", "%", "=", "&", "|",
+	};
+
 	static final String[] symbols = {
-			"+", "-", "*", "/", "=", "&", "|",
-			"++", "+=", "--", "-=", "**", "*=", "/=", "==", "!=",
+			"++", "+=", "--", "-=", "**", "*=", "/=", "%=", "==", "!=",
 			"&&", "||", "&=", "|=",
 	};
 
@@ -87,10 +94,14 @@ public class SignShell {
 		this.word = "";
 	}
 
+	Hoge[] getCodes(){
+		return words.toArray(new Hoge[0]);
+	}
+
 	void output(){
 		for(Hoge hoge: words){
 			System.out.print(hoge);
-			if(hoge.type == Type.SEMICOLON)System.out.println();
+			if(hoge.getType() == Type.SEMICOLON)System.out.println();
 		}
 	}
 
@@ -120,6 +131,10 @@ public class SignShell {
 						}
 						this.resetWord();
 						continue roop;
+					}else{
+						cnt -= 2;
+						resetWord();
+						read();
 					}
 				}else{
 					break roop;
@@ -228,8 +243,8 @@ public class SignShell {
 	}
 
 	boolean isSymbol(){
-		for(int i = 0; i < 7; i++){
-			if(String.valueOf(read).equals(symbols[i]))return true;
+		for(int i = 0; i < singleSymbols.length; i++){
+			if(String.valueOf(read).equals(singleSymbols[i]))return true;
 		}
 		return false;
 	}
@@ -245,15 +260,24 @@ public class SignShell {
 }
 
 class Hoge{
-	public String hoge;
-	public Type type;
-	public Hoge(String hoge, Type type){
-		this.hoge = hoge;
+	private String word;
+	private Type type;
+	public Hoge(String word, Type type){
+		this.word = word;
 		this.type = type;
 	}
+
+	public String getWord(){
+		return word;
+	}
+
+	public Type getType(){
+		return type;
+	}
+
 	@Override
 	public String toString(){
-		return String.format("(\"%s\", %s)", hoge, type);
+		return String.format("(\"%s\", %s)", word, type);
 	}
 }
 
